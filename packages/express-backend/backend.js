@@ -52,17 +52,37 @@ const findUserByNameAndJob = (name, job) => {
 const findUserById = (id) =>
   users["users_list"].find((user) => user["id"] === id);
 
+function generateID() {
+  let genid = "";
+  for (let i = 0; i < 6; i++) {
+    // want to generate 3 letters first
+    if (i < 3) {
+      const f3 = Math.floor(Math.random() * (122 - 97) + 97);
+      genid += String.fromCharCode(f3);
+    } else { // for last 3 letters we take a num 0-9
+      const l3 = Math.floor(Math.random() * 10);
+      genid += l3;
+    }
+  }
+  return genid;
+}
+
 const addUser = (user) => {
-    users["users_list"].push(user);
-    return user;
+  const newID = generateID();
+  const newUser = { id: newID, ...user };
+    users["users_list"].push(newUser);
+    return newUser;
   };
 
-const deleteUser = (user) => {
-    const ind = users["users_list"].findIndex(u => u === user);
-    users["users_list"].splice(ind, 1);
-    return user;
+
+const deleteUser = (id) => {
+  const ind = users["users_list"].findIndex(user => user.id === id);
+  if (ind !== -1) {
+      users["users_list"].splice(ind, 1);
+  }
+  return 1;
   };
-  
+
 app.use(cors());
 app.use(express.json());
 
@@ -98,15 +118,24 @@ app.get("/users", (req, res) => {
 
 app.post("/users", (req, res) => {
     const userToAdd = req.body;
-    addUser(userToAdd);
-    res.send();
+    const newUser = addUser(userToAdd);
+    if (newUser) {
+      res.status(201).send(newUser);
+    } else {
+      res.status(400).send({ error: "Failed to add user."})
+    }
   });
 
-app.delete("/users", (req, res) => {
-    const userToDelete = req.body;
-    deleteUser(userToDelete)
-    res.send();
-  });
+  app.delete("/users/:id", (req, res) => {
+    const userId = req.params.id;
+    const success = deleteUser(userId);
+    if (success) {
+      res.status(204).send();
+    } else {
+      res.status(404).send();
+    }
+});
+
 
 app.listen(port, () => {
   console.log(
